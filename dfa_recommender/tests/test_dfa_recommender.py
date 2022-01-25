@@ -13,3 +13,6 @@ import dfa_recommender
 def test_dfa_recommender_imported():
     """Sample test, will always pass so long as import statement worked."""
     assert "dfa_recommender" in sys.modules
+
+# def test_must_fail():
+#     assert False
