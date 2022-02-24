@@ -7,7 +7,10 @@ from torch import nn
 from torch import Tensor
 
 
-def call_bn(bn, x, update_batch_stats=True):
+def call_bn(bn: nn.BatchNorm1d, x: Tensor, update_batch_stats: bool = True) -> None:
+    '''
+    Call for batch normalization
+    '''
     if bn.training is False:
         return bn(x)
     elif not update_batch_stats:
@@ -19,7 +22,7 @@ def call_bn(bn, x, update_batch_stats=True):
 
 class MySoftplus(nn.Module):
     """
-    Shifted Softplus.
+    Shifted Softplus such as MySoftplus(0) = 0
     """
     __constants__ = ['beta', 'threshold']
     beta: int
@@ -38,24 +41,15 @@ class MySoftplus(nn.Module):
 
 
 class MLP(nn.Module):
-    """Multiple layer fully connected perceptron neural network.
-    Args:
-        n_in (int): number of input nodes.
-        n_out (int): number of output nodes.
-        n_hidden (list of int or int, optional): number hidden layer nodes.
-            If an integer, same number of node is used for all hidden layers resulting
-            in a rectangular network.
-            If None, the number of neurons is divided by two after each layer starting
-            n_in resulting in a pyramidal network.
-        n_layers (int, optional): number of layers.
-        activation (callable, optional): activation function. All hidden layers would
-            the same activation function except the output layer that does not apply
-            any activation function.
-    """
+    '''
+    Multiple layer fully connected neural network.
+    Each type of element has a MLP.
+    Same elements share the same MLP (i.e., weight sharing)
+    '''
 
-    def __init__(
-        self, n_in, n_out, n_hidden=50, n_layers=2, activation=None, droprate=0.2,
-    ):
+    def __init__(self, n_in: int, n_out: int,
+                 n_hidden: int = 50, n_layers: int = 3,
+                 droprate: float = 0.2) -> None:
         super(MLP, self).__init__()
         self.n_neurons = [n_in] + \
             [n_hidden for _ in range(n_layers-1)] + [n_out]
@@ -69,32 +63,36 @@ class MLP(nn.Module):
             nn.Linear(self.n_neurons[-2], self.n_neurons[-1], bias=True))
         self.out_net = nn.Sequential(*layers)
 
-    def forward(self, inputs):
-        """Compute neural network output.
-        Args:
-            inputs (torch.Tensor): network input.
-        Returns:
-            torch.Tensor: network output.
-        """
-        return self.out_net(inputs)
+    def forward(self, inputs: Tensor) -> Tensor:
+        '''
+        Compute output.
 
-    
+        Parameters
+        ----------
+        inputs: torch.Tensor,
+            model input.
+
+        Returns:
+        --------
+        outputs: torch.Tensor,
+            model output.
+        '''
+        outputs = self.out_net(inputs)
+        return outputs
+
+
 class TiledMultiLayerNN(nn.Module):
     """
-    Tiled multilayer networks which are applied to the input and produce n_tiled different outputs.
-    These outputs are then stacked and returned. Used e.g. to construct element-dependent prediction
-    networks of the Behler-Parrinello type.
-    Args:
-        n_in (int): number of input nodes
-        n_out (int): number of output nodes
-        n_tiles (int): number of networks to be tiled
-        n_hidden (int): number of nodes in hidden nn (default 50)
-        n_layers (int): number of layers (default: 3)
+    Tiled multilayer networks.
+    A list of MLPs
+    These MLPs are applied to the input to which the outputs as concatenated.
+    The purpose is to create element-wise prediction.
+    Note that n_tiles should be the same as the number of element types in your data set.
     """
 
-    def __init__(
-        self, n_in, n_out, n_tiles, n_hidden=50, n_layers=3, activation=None, droprate=0.2,
-    ):
+    def __init__(self, n_in: int, n_out: int, n_tiles: int,
+                 n_hidden: int = 50, n_layers: int = 3,
+                 droprate: float = 0.2) -> None:
         super(TiledMultiLayerNN, self).__init__()
         self.mlps = nn.ModuleList(
             [
@@ -103,28 +101,39 @@ class TiledMultiLayerNN(nn.Module):
                     n_out,
                     n_hidden=n_hidden,
                     n_layers=n_layers,
-                    activation=activation,
                     droprate=droprate,
                 )
                 for _ in range(n_tiles)
             ]
         )
 
-    def forward(self, inputs):
-        """
-        Args:
-            inputs (torch.Tensor): Network inputs.
+    def forward(self, inputs: Tensor) -> Tensor:
+        '''
+        Compute output.
+
+        Parameters
+        ----------
+        inputs: torch.Tensor,
+            model input.
+
         Returns:
-            torch.Tensor: Tiled network outputs.
-        """
-        return torch.cat([net(inputs) for net in self.mlps], dim=-1)
+        --------
+        outputs: list,
+            model output as list of torch.Tensor
+        '''
+        outputs = torch.cat([net(inputs) for net in self.mlps], dim=-1)
+        return outputs
 
 
 class ElementalGate(nn.Module):
     """
+    Element based masking.
     Produces a Nbatch x Natoms x Nelem mask depending on the nuclear charges passed as an argument.
+    The purpose is to create element-wise activate based on the block-wise weights in self.gate
     If onehot is set, mask is one-hot mask, else a random embedding is used.
     If the trainable flag is set to true, the gate values can be adapted during training.
+    It is recommended to create a mapping dictionary for your elements. For example:
+    mapping = {"X": 0, "H": 1, "C": 2, "N": 3, "O": 4, "F": 5}
     Args:
         elements (set of int): Set of atomic number present in the data
         onehot (bool): Use one hit encoding for elemental gate. If set to False, random embedding is used instead.
@@ -136,34 +145,44 @@ class ElementalGate(nn.Module):
         self.trainable = trainable
         self.n_out = n_out
 
-        # Get the number of elements, as well as the highest nuclear charge to use in the embedding vector
         self.nelems = len(elements)
         maxelem = int(max(elements) + 1)
 
         self.gate = nn.Embedding(maxelem, self.nelems)
 
-        # if requested, initialize as one hot gate for all elements
         if onehot:
             weights = torch.zeros(maxelem, self.nelems*self.n_out)
             for idx, Z in enumerate(elements):
                 weights[Z, self.n_out * idx: self.n_out*(idx+1)] = 1.0
             self.gate.weight.data = weights
 
-        # Set trainable flag
         if not trainable:
             self.gate.weight.requires_grad = False
 
-    def forward(self, atomic_numbers):
-        """
-        Args:
-            atomic_numbers (torch.Tensor): Tensor containing atomic numbers of each atom.
+    def forward(self, inputs: Tensor) -> Tensor:
+        '''
+        Compute output.
+
+        Parameters
+        ----------
+        inputs: torch.Tensor,
+            model input as atomic numbers
+
         Returns:
-            torch.Tensor: One-hot vector which is one at the position of the element and zero otherwise.
-        """
-        return self.gate(atomic_numbers)
+        --------
+        outputs: torch.Tensor,
+            model output which is unity at the position of the element and zero otherwise.
+        '''
+        outputs = self.gate(inputs)
+        return outputs
 
 
 class finalMLP(nn.Module):
+    '''
+    The final fully connected neural network that maps the outputs from ElementalGate to the final outputs.
+
+    '''
+
     def __init__(
         self, elements, n_out, droprate=0.2,
     ):
@@ -177,7 +196,23 @@ class finalMLP(nn.Module):
         self.bn_fc1 = nn.BatchNorm1d(len(elements)*n_out)
         self.bn_fc2 = nn.BatchNorm1d(len(elements)*n_out)
 
-    def forward(self, inputs, update_batch_stats=True):
+    def forward(self, inputs: Tensor,
+                update_batch_stats: bool = True) -> Tensor:
+        '''
+        Compute output.
+
+        Parameters
+        ----------
+        inputs: torch.Tensor,
+            model inputs
+        update_batch_stats: bool, Optional, default as True
+            used only in batch normalization
+
+        Returns:
+        --------
+        outputs: torch.Tensor,
+            model outputs.
+        '''
         x0 = inputs
 #         x1 = call_bn(self.bn_fc1, self.activation(
 #             self.fc1(x0)), update_batch_stats)
@@ -191,71 +226,64 @@ class finalMLP(nn.Module):
 
 
 class GatedNetwork(nn.Module):
-    """
-    Combines the TiledMultiLayerNN with the elemental gate to obtain element specific atomistic networks as in typical
-    Behler--Parrinello networks [#behler1]_.
-    Args:
-        nin (int): number of input nodes
-        nout (int): number of output nodes
-        nnodes (int): number of nodes in hidden nn (default 50)
-        nlayers (int): number of layers (default 3)
-        elements (set of ints): Set of atomic number present in the data
-        onehot (bool): Use one hit encoding for elemental gate. If set to False, random embedding is used instead.
-        trainable (bool): If set to true, gate can be learned during training (default False)
-        activation (callable): activation function
-    References
-    ----------
-    .. [#behler1] Behler, Parrinello:
-       Generalized Neural-Network Representation of High-Dimensional Potential-Energy Surfaces.
-       Phys. Rev. Lett. 98, 146401. 2007.
-    """
+    '''
+    Behler-Parrinello type gated networks.
+    '''
 
     def __init__(
         self,
-        nin,
-        n_out,
-        elements,
-        n_hidden=50,
-        n_layers=3,
-        trainable=False,
-        onehot=True,
-        activation=None,
-        droprate=0.2,
-        regression=True,
+        nin: int,
+        n_out: int,
+        elements: list,
+        n_hidden: int = 50,
+        n_layers: int = 3,
+        trainable: bool = False,
+        onehot: bool = True,
+        droprate: float = 0.2,
     ):
         super(GatedNetwork, self).__init__()
         self.nelem = len(elements)
         self.gate = ElementalGate(
-            elements, n_out=n_out, trainable=trainable, onehot=onehot)
+            elements, n_out=n_out, 
+            trainable=trainable, onehot=onehot
+            )
         self.fmpl = finalMLP(elements, n_out, droprate)
-        self.regression = regression
         self.network = TiledMultiLayerNN(
             nin,
             n_out,
             self.nelem,
             n_hidden=n_hidden,
             n_layers=n_layers,
-            activation=activation,
             droprate=droprate,
         )
 
-    def forward(self, inputs, update_batch_stats=True):
-        """
-        Args:
-            inputs (dict of torch.Tensor): SchNetPack format dictionary of input tensors.
+    def forward(self, inputs: Tensor,
+                update_batch_stats: bool = True) -> Tensor:
+        '''
+        Compute output.
+
+        Parameters
+        ----------
+        inputs: torch.Tensor,
+            model inputs, [batch_size, max(natoms), :-1] are the molecule features,
+            [batch_size, max(natoms), -1] encode the element type.
+        update_batch_stats: bool, Optional, default as True
+            used only in batch normalization
+
         Returns:
-            torch.Tensor: Output of the gated network.
-        """
+        --------
+        outputs: torch.Tensor,
+            model outputs.
+        '''
         atomic_numbers = torch.Tensor.int(
             inputs[:, :, -1]).type(torch.LongTensor)
         representation = inputs[:, :, :-1]
         gated_network = self.gate(atomic_numbers) * \
             self.network(representation)
-        # ---direct summation without feed forward---
+        ## ---direct summation without feed forward, original BP---
         # return torch.sum(gated_network, dim=[-2, -1], keepdim=False)
-        # ---element aggregation---
+        ## ---element aggregation---
         aggre = torch.sum(gated_network, dim=[-2], keepdim=False)
-        out = torch.squeeze(
+        outputs = torch.squeeze(
             self.fmpl(aggre, update_batch_stats=update_batch_stats))
-        # out = self.fmpl(aggre, update_batch_stats=update_batch_stats)
-        return out
+        return outputs

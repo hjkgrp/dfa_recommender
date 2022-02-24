@@ -90,15 +90,18 @@ class RPT(object):
         # print(LDS_array, LDS)
         return LDS, LDS_array
 
-def df_l2_normalize(d, l_x):
-    r = d[:, :, :-1]
-    sample_size = l_x.shape
-    rand_size = (sample_size[0], sample_size[1], sample_size[2] - 1)
-    cat_size = (sample_size[0], sample_size[1], 1)
-    zeros_mat = torch.zeros(rand_size)
-    dn = torch.where(l_x[:, :, :-1] != 0, r, zeros_mat)
-    dn = torch.cat((dn, torch.zeros(cat_size)), -1)
-    dn = dn.cpu().numpy()
+def df_l2_normalize(d, l_x, cut=True):
+    if cut:
+        r = d[:, :, :-1]
+        sample_size = l_x.shape
+        rand_size = (sample_size[0], sample_size[1], sample_size[2] - 1)
+        cat_size = (sample_size[0], sample_size[1], 1)
+        zeros_mat = torch.zeros(rand_size)
+        dn = torch.where(l_x[:, :, :-1] != 0, r, zeros_mat)
+        dn = torch.cat((dn, torch.zeros(cat_size)), -1)
+        dn = dn.cpu().numpy()
+    else:
+       dn = d.cpu().numpy() 
     if len(d.shape) == 3:
         dn /= (np.sqrt(np.sum(dn ** 2, axis=(1, 2))).reshape(
             (-1, 1, 1)) + 1e-16)
@@ -107,35 +110,34 @@ def df_l2_normalize(d, l_x):
     return torch.from_numpy(dn)
 
 class regVAT(object):
-    def __init__(self, device, eps, xi, alpha, k=1, use_entmin=False):
+    def __init__(self, device, eps, xi, alpha, k=1, cut=True):
         self.device = device
         self.xi = xi
         self.eps = eps
         self.alpha = alpha
         self.k = k
-        self.mse = torch.nn.L1Loss(reduction='none')
-        self.use_entmin = use_entmin
+        self.cut = cut
+        self.metric = torch.nn.L1Loss(reduction='none').to(device)
 
     def __call__(self, model, X, return_adv=False):
         model.eval()
-        X_cp = torch.clone(X)
         logits = model(X, update_batch_stats=False)
         prob_logits = logits.detach()
-        d = df_l2_normalize(torch.randn(X.size()), X_cp).to(self.device)
+        d = df_l2_normalize(torch.randn(X.size()), X, self.cut).to(self.device)
 
-        for ip in range(self.k):
+        for __ in range(self.k):
             X_hat = X + d * self.xi
             X_hat.requires_grad = True
             logits_hat = model(X_hat, update_batch_stats=False)
 
-            adv_distance = torch.mean(self.mse(logits_hat, prob_logits))
+            adv_distance = torch.mean(self.metric(logits_hat, prob_logits))
             adv_distance.backward()
-            d = df_l2_normalize(X_hat.grad, X_cp).to(self.device)
+            d = df_l2_normalize(X_hat.grad, X, self.cut).to(self.device)
 
         if return_adv:
             model.train()
             return d
         logits_hat = model(X + self.eps * d, update_batch_stats=False)
-        LDS = self.alpha * torch.mean(self.mse(logits_hat, prob_logits))
+        LDS = self.alpha * torch.mean(self.metric(logits_hat, prob_logits))
         model.train()
         return LDS
