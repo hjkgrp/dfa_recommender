@@ -3,6 +3,9 @@ from torch.utils import data
 
 
 class InfiniteSampler(data.sampler.Sampler):
+    '''
+    Sample datasets
+    '''
     def __init__(self, num_samples):
         self.num_samples = num_samples
 

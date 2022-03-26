@@ -5,6 +5,19 @@ import torch.nn.functional as F
 
 
 def _l2_normalize(d):
+    '''
+    Normalize d.
+
+    Parameters
+    ----------
+    d: torch.Tensor
+        random perturbation in the input space
+
+    Returns
+    ----------
+    dn: torch.Tensor
+        normalized random perturbation in the input space
+    '''
     d = d.cpu().numpy()
     if len(d.shape) == 4:
         d /= (np.sqrt(np.sum(d ** 2, axis=(1, 2, 3))).reshape(
@@ -17,18 +30,29 @@ def _l2_normalize(d):
             (-1, 1)) + 1e-16)
     else:
         raise ValueError("Dimension is not encoded yet.")
-    return torch.from_numpy(d)
+    dn = torch.from_numpy(d)
+    return dn
 
 
 def _entropy(logits):
+    '''
+    Calculation of cross entropy
+    '''
     return -torch.mean(torch.sum(F.softmax(logits, dim=1) * F.log_softmax(logits, dim=1), dim=1))
 
 
 def _entropy_array(logits):
+    '''
+    Calculation of cross entropy as an array (not averaged)
+    '''
     return np.abs(torch.sum(F.softmax(logits, dim=1) * F.log_softmax(logits, dim=1), dim=1).detach().cpu().numpy())
 
 
 class VAT(object):
+    '''
+    Implementation of virtual adversarial training. 
+    See https://arxiv.org/abs/1704.03976 for more details.
+    '''
     def __init__(self, device, eps, xi, alpha, k=1, use_entmin=False):
         self.device = device
         self.xi = xi
@@ -65,7 +89,12 @@ class VAT(object):
             LDS_array += ent_array
         return LDS, LDS_array
 
+
 class RPT(object):
+    '''
+    Implementation of random perturbation training. 
+    See https://arxiv.org/abs/1704.03976 for more details.
+    '''
     def __init__(self, device, eps, xi, k=10, use_entmin=False):
         self.device = device
         self.xi = xi
@@ -90,7 +119,25 @@ class RPT(object):
         # print(LDS_array, LDS)
         return LDS, LDS_array
 
+
 def df_l2_normalize(d, l_x, cut=True):
+    '''
+    Normalize d with a zero masking.
+
+    Parameters
+    ----------
+    d: torch.Tensor
+        random perturbation in the input space
+    l_x: torch.Tensor
+        a tensor based on which the mask is created
+    cut: bool, default as True
+        whether applying the mask or not
+
+    Returns
+    ----------
+    dn: torch.Tensor
+        normalized random perturbation in the input space
+    '''
     if cut:
         r = d[:, :, :-1]
         sample_size = l_x.shape
@@ -101,15 +148,22 @@ def df_l2_normalize(d, l_x, cut=True):
         dn = torch.cat((dn, torch.zeros(cat_size)), -1)
         dn = dn.cpu().numpy()
     else:
-       dn = d.cpu().numpy() 
+        dn = d.cpu().numpy() 
     if len(d.shape) == 3:
         dn /= (np.sqrt(np.sum(dn ** 2, axis=(1, 2))).reshape(
             (-1, 1, 1)) + 1e-16)
     else:
         raise ValueError("Dimension is not encoded yet.")
+    dn = torch.from_numpy(dn)
     return torch.from_numpy(dn)
 
+
 class regVAT(object):
+    '''
+    Implementation of virtual adversarial training in a regression task
+    The only difference compared to VAT is the change of KL divergence to MSE
+    in measuring the original and perturbed point.
+    '''
     def __init__(self, device, eps, xi, alpha, k=1, cut=True):
         self.device = device
         self.xi = xi

@@ -6,15 +6,17 @@ from dfa_recommender.df_class import DensityFitting
 from dfa_recommender.df_utils import get_spectra, get_subtracted_spectra
 import numpy as np
 import pytest
+from pkg_resources import resource_filename, Requirement
 
 
 def test_df_water():
 
-    ref_dab_P = np.load("./reference/water/dab_p.npy", allow_pickle=True)
-    ref_ps = np.load("./reference/water/ps.npy", allow_pickle=True)
+    basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/tests/")
+    ref_dab_P = np.load(basepath + "reference/water/dab_p.npy", allow_pickle=True)
+    ref_ps = np.load(basepath + "reference/water/ps.npy", allow_pickle=True)
     densfit = DensityFitting(
-        wfnpath="./inputs/water/wfn.180.npy",
-        xyzfile="./inputs/water/geo.xyz",
+        wfnpath=basepath + "inputs/water/wfn.180.npy",
+        xyzfile=basepath + "inputs/water/geo.xyz",
         charge=0,
         spin=1,
         basis="def2-tzvp"
@@ -31,14 +33,15 @@ def test_df_water():
 
 def test_df_vert_spin_splitting():
 
-    ref_ps = np.load("./reference/vert_spin_splitting/ps.npy", allow_pickle=True)
+    basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/tests/")
+    ref_ps = np.load(basepath + "reference/vert_spin_splitting/ps.npy", allow_pickle=True)
     densfit = DensityFitting(
-        wfnpath="./inputs/vert_spin_splitting/wfn.180.npy",
-        xyzfile="./inputs/vert_spin_splitting/geo.xyz",
+        wfnpath=basepath + "inputs/vert_spin_splitting/wfn.180.npy",
+        xyzfile=basepath + "inputs/vert_spin_splitting/geo.xyz",
         charge=0,
         spin=1,
         basis="def2-tzvp",
-        wfnpath2="./inputs/vert_spin_splitting/triplet_wfn.180.npy",
+        wfnpath2=basepath + "inputs/vert_spin_splitting/triplet_wfn.180.npy",
     )
     ps = get_subtracted_spectra(
         densfit=densfit,
@@ -49,10 +52,11 @@ def test_df_vert_spin_splitting():
 
 
 def test_no_wfn2():
+    basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/tests/")
     try:
         _ = DensityFitting(
-            wfnpath="./inputs/vert_spin_splitting/wfn.180.npy",
-            xyzfile="./inputs/vert_spin_splitting/geo.xyz",
+            wfnpath=basepath + "inputs/vert_spin_splitting/wfn.180.npy",
+            xyzfile=basepath + "inputs/vert_spin_splitting/geo.xyz",
             charge=0,
             spin=1,
             basis="def2-tzvp",

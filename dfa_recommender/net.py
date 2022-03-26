@@ -50,6 +50,23 @@ class MLP(nn.Module):
     def __init__(self, n_in: int, n_out: int,
                  n_hidden: int = 50, n_layers: int = 3,
                  droprate: float = 0.2) -> None:
+        '''
+        Build model
+
+        Parameters
+        ----------
+        n_in: int,
+            number of input neurons
+        n_out: int,
+            number of output neurons
+        n_hidden: int,
+            number of hidden neurons
+        n_layers: int,
+            number of total layers
+        droprate: float
+            dropout rate at each hidden layer
+        
+        '''
         super(MLP, self).__init__()
         self.n_neurons = [n_in] + \
             [n_hidden for _ in range(n_layers-1)] + [n_out]
@@ -93,6 +110,24 @@ class TiledMultiLayerNN(nn.Module):
     def __init__(self, n_in: int, n_out: int, n_tiles: int,
                  n_hidden: int = 50, n_layers: int = 3,
                  droprate: float = 0.2) -> None:
+        '''
+        Build model
+
+        Parameters
+        ----------
+        n_in: int,
+            number of input neurons
+        n_out: int,
+            number of output neurons
+        n_hidden: int,
+            number of hidden neurons
+        n_layers: int,
+            number of total layers
+        droprate: float
+            dropout rate at each hidden layer
+        n_tiles: int,
+            number of independent shared-weights MLPs. this number should be the same as the number of element i your set.
+        '''
         super(TiledMultiLayerNN, self).__init__()
         self.mlps = nn.ModuleList(
             [
@@ -134,13 +169,23 @@ class ElementalGate(nn.Module):
     If the trainable flag is set to true, the gate values can be adapted during training.
     It is recommended to create a mapping dictionary for your elements. For example:
     mapping = {"X": 0, "H": 1, "C": 2, "N": 3, "O": 4, "F": 5}
-    Args:
-        elements (set of int): Set of atomic number present in the data
-        onehot (bool): Use one hit encoding for elemental gate. If set to False, random embedding is used instead.
-        trainable (bool): If set to true, gate can be learned during training (default False)
     """
 
     def __init__(self, elements, n_out, onehot=True, trainable=False):
+        '''
+        Build model
+
+        Parameters
+        ----------
+        elements: list,
+            set of atomic number present in the data
+        n_out: int,
+            number of output neurons
+        onehot: bool, default as True
+            Use one hit encoding for elemental gate. If set to False, random embedding is used instead
+        trainable: bool, default as False
+            If set to true, gate can be learned during training
+        '''
         super(ElementalGate, self).__init__()
         self.trainable = trainable
         self.n_out = n_out
@@ -186,6 +231,18 @@ class finalMLP(nn.Module):
     def __init__(
         self, elements, n_out, droprate=0.2,
     ):
+        '''
+        Build model
+
+        Parameters
+        ----------
+        elements: list,
+            set of atomic number present in the data
+        n_out: int,
+            number of output neurons
+        droprate: float
+            dropout rate at each hidden layer
+        '''
         super(finalMLP, self).__init__()
         self.fc1 = nn.Linear(len(elements)*n_out, len(elements)*n_out)
         self.fc2 = nn.Linear(len(elements)*n_out, len(elements)*n_out)
@@ -227,7 +284,7 @@ class finalMLP(nn.Module):
 
 class GatedNetwork(nn.Module):
     '''
-    Behler-Parrinello type gated networks.
+    Behler-Parrinello type gated networks that combines all the building blocks above.
     '''
 
     def __init__(
@@ -241,6 +298,30 @@ class GatedNetwork(nn.Module):
         onehot: bool = True,
         droprate: float = 0.2,
     ):
+        '''
+        Build model
+
+        Parameters
+        ----------
+        n_in: int,
+            number of input neurons
+        n_out: int,
+            number of output neurons
+        n_hidden: int,
+            number of hidden neurons
+        n_layers: int,
+            number of total layers
+        droprate: float
+            dropout rate at each hidden layer
+        elements: list,
+            set of atomic number present in the data
+        n_out: int,
+            number of output neurons
+        onehot: bool, default as True
+            Use one hit encoding for elemental gate. If set to False, random embedding is used instead
+        trainable: bool, default as False
+            If set to true, gate can be learned during training
+        '''
         super(GatedNetwork, self).__init__()
         self.nelem = len(elements)
         self.gate = ElementalGate(
