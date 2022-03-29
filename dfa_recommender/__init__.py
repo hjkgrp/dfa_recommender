@@ -1,7 +1,7 @@
 """System-specific density functional recommender"""
 
 # Add imports here
-from .funcs import *
+#from .funcs import *
 
 # Handle versioneer
 from ._version import get_versions
