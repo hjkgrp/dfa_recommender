@@ -90,6 +90,9 @@ class DensityFitting:
 
     @wfnpath.setter
     def wfnpath(self, wfnpath: str) -> None:
+        '''
+        set wfn and orb attribute
+        '''
         self._wfnpath = wfnpath
         self.wfn = psi4.core.Wavefunction.from_file(self._wfnpath)
         assert isinstance(self.wfn, psi4.core.Wavefunction)
@@ -101,6 +104,9 @@ class DensityFitting:
 
     @wfnpath2.setter
     def wfnpath2(self, wfnpath2: str) -> None:
+        '''
+        set wfn2 attribute. wfn2 is the wfn of the other electronic state at the same geometry
+        '''
         self._wfnpath2 = wfnpath2
         if wfnpath2 == "NA":
             pass
@@ -116,6 +122,9 @@ class DensityFitting:
 
     @xyzfile.setter
     def xyzfile(self, xyzfile: str) -> None:
+        '''
+        set psi4 molecule and symbols attribute
+        '''
         self._xyzfile = xyzfile
         self.mol, self.symbols = get_molecule(self._xyzfile, self.charge, self.spin)
         assert isinstance(self.mol, psi4.core.Molecule)
@@ -141,6 +150,9 @@ class DensityFitting:
         self.dab_P = np.einsum('abQ,QP->abP', abQ, self.Jinv, optimize=True)
         
     def calc_utilities(self) -> None:
+        '''
+        Calculate the shell numbers and number of basis functions in each shell.
+        '''
         self.numfuncatom = np.zeros(self.mol.natom())
         shells = []
         for func in range(0, self.aux.nbf()):
