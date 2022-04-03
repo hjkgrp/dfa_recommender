@@ -8,10 +8,12 @@ on:
     branches:
       - "master"
       - "main"
+      - "unitests"
   pull_request:
     branches:
       - "master"
       - "main"
+      - "unitests"
 #   schedule:
 #     # Nightly tests run on master by default:
 #     #   Scheduled workflows run on the latest commit on the default or base branch.
