@@ -91,10 +91,10 @@ def test_vat():
     alpha = 1.
     cut = True
     vat_criterion = regVAT(device, eps, xi, alpha, k=3, cut=cut)
-    d_x = vat_criterion(model, x, return_adv=True).numpy()
+    d_x = vat_criterion(model, x)
+    d_x = d_x.detach().numpy().reshape(-1)[0]
     
-    assert np.abs(np.max(d_x) - 0.036961406) < 1e-4
-    assert np.abs(np.min(d_x) - -0.04693729) < 1e-4
+    assert np.max(d_x - 0.0012390986) < 1e-4
     
     
 def test_evaluator():
