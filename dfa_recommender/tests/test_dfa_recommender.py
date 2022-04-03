@@ -48,6 +48,15 @@ def test_load_model():
         basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/data/")
         _ = pickle.load(open(basepath + "/models-trends/mergedG10-abs-reg-b3lyp.pkl", "rb"))
         
+def test_build_nn():
+    '''
+    Test building GatedNetwork
+    '''
+    from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
+    
+    _ = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96, n_layers=4, droprate=0,
+                          elements=list(range(10)))
+        
 def test_nn_workflow():
     '''
     Test the whole workflow of using trained NN for predictions.
@@ -59,6 +68,7 @@ def test_nn_workflow():
     from dfa_recommender.sampler import InfiniteSampler
     from dfa_recommender.evaluate import evaluate_regressor
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
+    from dfa_recommender.vat import regVAT, VAT
     
     if __name__ == '__main__':
         basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/data/")
@@ -87,3 +97,13 @@ def test_nn_workflow():
 
         mae, scaled_mae, rval = evaluate_regressor(best_model, te_loader, device, y_scaler)
         assert np.abs(mae - 2.2448943) < 1e-2
+        
+        eps = 1.
+        xi = 1e-3
+        alpha = 1.
+        cut = True
+        l_x, _ = next(l_te_iter)
+        vat_criterion = regVAT(device, eps, xi, alpha, k=3, cut=cut)
+        d_x = vat_criterion(best_model, l_x, return_adv=True).numpy()
+        _vat_criterion = VAT(device, eps, xi, alpha, k=3, use_entmin=True)
+        LDS, LDS_array = _vat_criterion(best_model, l_x).numpy()

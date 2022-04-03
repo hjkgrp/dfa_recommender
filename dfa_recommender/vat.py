@@ -93,36 +93,6 @@ class VAT(object):
         return LDS, LDS_array
 
 
-class RPT(object):
-    '''
-    Implementation of random perturbation training. 
-    See https://arxiv.org/abs/1704.03976 for more details.
-    '''
-    def __init__(self, device, eps, xi, k=10, use_entmin=False):
-        self.device = device
-        self.xi = xi
-        self.eps = eps
-        self.k = k
-        self.kl_div = nn.KLDivLoss(reduction='none').to(device)
-        self.use_entmin = use_entmin
-
-    def __call__(self, model, X):
-        LDS = 0
-        LDS_array = np.zeros(shape=(X.shape[0],))
-        for _ in range(self.k):
-            logits = model(X, update_batch_stats=False)
-            prob_logits = F.softmax(logits.detach(), dim=1)
-            d = _l2_normalize(torch.randn(X.size())).to(self.device)
-            X_prime = X + self.eps * d
-            logits_hat = model(X + self.eps * d, update_batch_stats=False)
-            LDS += torch.mean(self.kl_div(F.log_softmax(logits_hat, dim=1), prob_logits).sum(dim=1)).detach().numpy()
-            LDS_array += np.abs(self.kl_div(F.log_softmax(logits_hat, dim=1), prob_logits).detach().numpy()[:, 0])
-        LDS_array /= self.k
-        LDS /= self.k
-        # print(LDS_array, LDS)
-        return LDS, LDS_array
-
-
 def df_l2_normalize(d, l_x, cut=True):
     '''
     Normalize d with a zero masking.
