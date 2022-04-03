@@ -14,6 +14,7 @@ def test_df_water():
     basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/tests/")
     ref_dab_P = np.load(basepath + "reference/water/dab_p.npy", allow_pickle=True)
     ref_ps = np.load(basepath + "reference/water/ps.npy", allow_pickle=True)
+    ref_CP = np.load(basepath + "reference/water/CP_pad_e3nn.npy", allow_pickle=True)
     densfit = DensityFitting(
         wfnpath=basepath + "inputs/water/wfn.180.npy",
         xyzfile=basepath + "inputs/water/geo.xyz",
@@ -27,7 +28,12 @@ def test_df_water():
         H=False,
         t="alpha",
     )
+    densfit.compensate_charges()
+    densfit.pad_df_coeffs()
+    densfit.convert_CP2e3nn()
+    
     assert np.max(np.abs(ref_dab_P - densfit.dab_P)) < 1e-6
+    assert np.max(np.abs(ref_CP - densfit.C_P_pad_e3nn)) < 1e-6
     assert np.max([np.max(np.abs(np.array(ref_ps[ii]) - np.array(ps[ii]))) for ii in range(ps.shape[0])]) < 1e-6
 
 

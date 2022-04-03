@@ -1,12 +1,8 @@
 import torch
-import torch.nn.functional as F
 import numpy as np
 from sklearn.metrics import r2_score, mean_absolute_error
 from scipy.stats import pearsonr
-from vat import VAT, RPT
-import matplotlib.pyplot as plt
 
-plt.style.use("myline")
 
 
 def evaluate_regressor(regressor, loader, device, y_scaler):
@@ -32,8 +28,6 @@ def evaluate_regressor(regressor, loader, device, y_scaler):
         scaled MAE
     rval: float,
         Pearson's coefficient
-    R2: float
-        Coefficient of determination
     '''
     assert isinstance(regressor, torch.nn.Module)
     assert isinstance(loader, torch.utils.data.DataLoader)
@@ -48,12 +42,10 @@ def evaluate_regressor(regressor, loader, device, y_scaler):
             preds.append(_pred.cpu().numpy())
             labels.append(y.cpu().numpy())
     y = y_scaler.inverse_transform(labels[0].reshape(-1, 1)).reshape(-1, )
-    y_hat = y_scaler.inverse_transform(preds[0][:, 0].reshape(-1, 1)).reshape(-1, )
+    y_hat = y_scaler.inverse_transform(preds[0].reshape(-1, 1)).reshape(-1, )
     mae = mean_absolute_error(y_hat, y)
     scaled_mae = mae/(np.max(y) - np.min(y))
-    # mae = mean_absolute_error(labels[0].reshape(-1, ), preds[0][:, 0])
-    # scaled_mae = mae/(np.max(labels[0].reshape(-1, )) - np.min(labels[0].reshape(-1, )))
-    R2 = r2_score(labels[0].reshape(-1, ), preds[0][:, 0])
-    rval = pearsonr(labels[0].reshape(-1, ), preds[0][:, 0])[0]
+    R2 = r2_score(y, y_hat)
+    rval = pearsonr(y, y_hat)[0]
     regressor.train()
-    return mae, scaled_mae, rval, R2
+    return mae, scaled_mae, rval
