@@ -10,6 +10,7 @@ dependencies:
   - pip
   - pytorch=1.10.0
   - pandas
+  - scikit-learn
 
     # Testing
   - pytest
