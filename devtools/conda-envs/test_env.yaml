@@ -9,6 +9,7 @@ dependencies:
   - psi4=1.3.2+ecbda83
   - pip
   - pytorch=1.10.0
+  - pandas
 
     # Testing
   - pytest
