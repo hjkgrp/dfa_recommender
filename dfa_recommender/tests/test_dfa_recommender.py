@@ -52,11 +52,84 @@ def test_build_nn():
     '''
     Test building GatedNetwork
     '''
+    import torch
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
     
-    _ = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96, n_layers=4, droprate=0,
-                          elements=list(range(10)))
-        
+    torch.set_num_threads(4)
+    torch.manual_seed(0)
+    np.random.seed(0)
+    device = torch.device('cpu')
+    
+    model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
+                         n_layers=4, droprate=0,
+                         elements=list(range(10)))
+    x = torch.zeros((1, 20, 58*3+7+1))
+    assert np.abs(model(x).detach().numpy().reshape(-1)[0] - -0.041750696) < 1e-6
+    x = torch.ones((1, 20, 58*3+7+1))
+    assert np.abs(model(x).detach().numpy().reshape(-1)[0] - -0.06381429) < 1e-6
+    
+    
+def test_vat():
+    '''
+    Test VAT
+    '''
+    import torch
+    from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
+    from dfa_recommender.vat import regVAT, VAT
+    
+    torch.set_num_threads(4)
+    torch.manual_seed(0)
+    np.random.seed(0)
+    device = torch.device('cpu')
+    
+    model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
+                         n_layers=4, droprate=0,
+                         elements=list(range(10)))
+    x = torch.ones((1, 20, 58*3+7+1))
+    eps = 1.
+    xi = 1e-3
+    alpha = 1.
+    cut = True
+    vat_criterion = regVAT(device, eps, xi, alpha, k=3, cut=cut)
+    d_x = vat_criterion(model, x, return_adv=True).numpy()
+    
+    assert np.abs(np.max(d_x) - 0.036961406) < 1e-4
+    assert np.abs(np.min(d_x) - -0.04693729) < 1e-4
+    
+    
+def test_evaluator():
+    '''
+    Test the model evaluation functions
+    '''
+    import torch
+    from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
+    from sklearn.preprocessing import StandardScaler
+    from dfa_recommender.evaluate import evaluate_regressor
+    from dfa_recommender.dataset import SubsetDataset
+    from torch.utils.data import DataLoader
+    
+    torch.set_num_threads(4)
+    torch.manual_seed(0)
+    np.random.seed(0)
+    device = torch.device('cpu')
+    
+    model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
+                         n_layers=4, droprate=0,
+                         elements=list(range(10)))
+    X = torch.stack([torch.zeros((20, 58*3+7+1)), torch.ones((20, 58*3+7+1))])
+    y = torch.Tensor([-0.041750696, -0.06381429])
+    scaler = StandardScaler()
+    scaler.fit(np.array([[1], [0], [-1]]))
+    dataset = torch.utils.data.TensorDataset(X, y)
+    sub = SubsetDataset(dataset, list(range(len(dataset))))
+    loader = DataLoader(sub, len(sub), num_workers=0)
+    mae, scaled_mae, rval = evaluate_regressor(model, loader, device, scaler)
+    
+    assert np.abs(mae) < 1e-6
+    assert np.abs(scaled_mae) < 1e-6
+    assert np.abs(1 - rval) < 1e-6
+    
+    
 def test_nn_workflow():
     '''
     Test the whole workflow of using trained NN for predictions.
@@ -97,13 +170,3 @@ def test_nn_workflow():
 
         mae, scaled_mae, rval = evaluate_regressor(best_model, te_loader, device, y_scaler)
         assert np.abs(mae - 2.2448943) < 1e-2
-        
-        eps = 1.
-        xi = 1e-3
-        alpha = 1.
-        cut = True
-        l_x, _ = next(l_te_iter)
-        vat_criterion = regVAT(device, eps, xi, alpha, k=3, cut=cut)
-        d_x = vat_criterion(best_model, l_x, return_adv=True).numpy()
-        _vat_criterion = VAT(device, eps, xi, alpha, k=3, use_entmin=True)
-        LDS, LDS_array = _vat_criterion(best_model, l_x).numpy()

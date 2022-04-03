@@ -128,7 +128,7 @@ def df_l2_normalize(d, l_x, cut=True):
     else:
         raise ValueError("Dimension is not encoded yet.")
     dn = torch.from_numpy(dn)
-    return torch.from_numpy(dn)
+    return dn
 
 
 class regVAT(object):
