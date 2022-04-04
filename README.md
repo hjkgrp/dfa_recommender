@@ -2,7 +2,7 @@ dfa_recommender
 ==============================
 [//]: # (Badges)
 [![CI](https://github.com/chenruduan/dfa_recommender/actions/workflows/CI.yaml/badge.svg)](https://github.com/chenruduan/dfa_recommender/actions/workflows/CI.yaml)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/dfa_recommender/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/dfa_recommender/branch/master)
+[![codecov](https://codecov.io/gh/chenruduan/dfa_recommender/branch/main/graphs/badge.svg?token=A1A3S0E2F9)](https://codecov.io/gh/chenruduan/dfa_recommender/branch/main)
 
 
 ### System-specific density functional recommender.
