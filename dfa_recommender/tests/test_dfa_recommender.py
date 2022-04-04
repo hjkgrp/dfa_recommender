@@ -95,6 +95,19 @@ def test_vat():
     d_x = d_x.detach().numpy().reshape(-1)[0]
     
     assert np.max(d_x - 0.0012390986) < 1e-4
+
+
+def test_np2ds():
+    '''
+    Test numpy_to_dataset
+    '''
+    import torch
+    from dfa_recommender.ml_utils import numpy_to_dataset
+    
+    X = np.zeros((2, 10, 10))
+    y = np.ones(2)
+    dataset = numpy_to_dataset(X, y, regression=True)
+    assert isinstance(dataset, torch.utils.data.TensorDataset)
     
     
 def test_evaluator():
