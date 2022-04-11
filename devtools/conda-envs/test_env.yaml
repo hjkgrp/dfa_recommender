@@ -1,14 +1,14 @@
-name: test
+name: dfa_rec
 channels:
   - defaults
   - psi4
   - conda-forge
 dependencies:
     # Base depends
-  - python=3.7.12
-  - psi4=1.3.2+ecbda83
+  - python=3.7
+  - psi4
   - pip
-  - pytorch=1.10.0
+  - pytorch
   - pandas
   - scikit-learn
 

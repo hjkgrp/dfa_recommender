@@ -133,7 +133,7 @@ class DensityFitting:
         '''
         Load files, transform them to utility varibles, and check data types
         '''
-        # psi4.core.set_global_option('df_basis_scf', "def2-universal-JFIT")
+        #psi4.core.set_global_option('df_basis_scf', "def2-universal-JFIT")
         self.aux = psi4.core.BasisSet.build(self.mol, "DF_BASIS_SCF", "", "JKFIT", self.basis)
 
     def get_dab(self) -> None:
@@ -142,13 +142,15 @@ class DensityFitting:
         '''
         zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
         mints = psi4.core.MintsHelper(self.orb)
-        abQ = mints.ao_eri(self.orb, self.orb, self.aux, zero_bas)
-        Jinv = mints.ao_eri(zero_bas, self.aux, zero_bas, self.aux)
+        #abQ = mints.ao_eri(self.orb, self.orb, self.aux, zero_bas)
+        #Jinv = mints.ao_eri(zero_bas, self.aux, zero_bas, self.aux)
+        abQ = mints.ao_eri(self.aux, zero_bas, self.orb, self.orb)
+        Jinv = mints.ao_eri(self.aux, zero_bas, self.aux, zero_bas)
         Jinv.power(-1.0, 1.e-14)
         abQ = np.squeeze(abQ)
         self.Jinv = np.squeeze(Jinv)
-        self.dab_P = np.einsum('abQ,QP->abP', abQ, self.Jinv, optimize=True)
-        
+        self.dab_P = np.einsum('Qab,QP->abP', abQ, self.Jinv, optimize=True)
+
     def calc_utilities(self) -> None:
         '''
         Calculate the shell numbers and number of basis functions in each shell.
@@ -160,11 +162,11 @@ class DensityFitting:
             shell = self.aux.function_to_shell(func)
             shells.append(shell)
             self.numfuncatom[current] += 1
-            
+
         self.shellmap = []
         ii = 0
         tmp, tmp_count = [], 0
-        for shell in range(self.aux.nshell()): 
+        for shell in range(self.aux.nshell()):
             count = shells.count(shell)
             tmp_count += count
             tmp.append((count-1)//2)
@@ -179,7 +181,7 @@ class DensityFitting:
         Calculate the raw density fitting coefficients.
         '''
         self.C_P = np.einsum('abP,ab->P', self.dab_P, D, optimize=True)
-        
+
     def compensate_charges(self):
         '''
         Compensate charges in the density fitting.
@@ -251,15 +253,15 @@ class DensityFitting:
                 preat = shells_to_at[i_s]
         powerspec.append(currat)
         return np.array(powerspec[1:])
-    
+
     def pad_df_coeffs(self) -> None:
         '''
-        Convert self.C_P (a 1D array) to self.self.C_P_pad (N_atoms x M), 
+        Convert self.C_P (a 1D array) to self.self.C_P_pad (N_atoms x M),
         where M corresponds to the largest dim of coeffs of all atoms.
         For example, H2O at def2-universal-jkfit basis has 113 coeffs.
         H -> [0, 0, 1, 1, 2, 2] -> 18 coeffs
         O -> [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4] -> 77 coeffs
-        Then self.self.C_P_pad is a (3, 77) np.array with zero-padding at corresponding irreps 
+        Then self.self.C_P_pad is a (3, 77) np.array with zero-padding at corresponding irreps
         '''
         self.max_shell = np.array(self.shellmap[np.argmax(self.numfuncatom)])
         self.n_coeff_atom = int(np.max(self.numfuncatom))
@@ -279,7 +281,7 @@ class DensityFitting:
                 tmplate.append((_shell == ii).sum()*(2*ii + 1) + tmplate[-1])
             tmplate.append(int(self.numfuncatom[jj]))
             tmplates.append(tmplate)
-            
+
         self.C_P_pad = np.zeros(shape=(self.numfuncatom.shape[0], self.n_coeff_atom))
         count = 0
         for ii, tmplate in enumerate(tmplates):
@@ -287,7 +289,7 @@ class DensityFitting:
                 _end = min(self.max_tmplate[jj] + tmplate[jj+1] - tmplate[jj], self.max_tmplate[jj+1])
                 self.C_P_pad[ii, self.max_tmplate[jj]: _end] = self.C_P[(count + tmplate[jj]): (count +tmplate[jj+1])]
             count += int(self.numfuncatom[ii])
-            
+
     def convert_CP2e3nn(self) -> None:
         '''
         match m between psi4 and e3nn convension within the same l.
@@ -313,5 +315,5 @@ class DensityFitting:
                 self.C_P_pad_e3nn[ii][self.max_tmplate[jj]: self.max_tmplate[jj+1]] = coeffs_trans
         mat = np.where(np.abs(self.C_P_pad_e3nn)< 1e-8)
         self.C_P_pad_e3nn[mat[0], mat[1]] = 0
-        
-        
+
+
