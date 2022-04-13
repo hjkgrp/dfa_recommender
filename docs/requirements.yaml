@@ -1,12 +1,14 @@
 name: docs
 channels:
+  - defaults
+  - psi4
+  - conda-forge
 dependencies:
     # Base depends
-  - python
+  - python=3.7
+  - psi4
   - pip
-
-
-
-    # Pip-only installs
-  #- pip:
+  - pytorch
+  - pandas
+  - scikit-learn
 

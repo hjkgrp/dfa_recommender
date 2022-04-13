@@ -17,7 +17,7 @@ def test_dfa_recommender_imported():
     Sample test, will always pass so long as import statement worked
     '''
     assert "dfa_recommender" in sys.modules
-    
+
 def test_psi4_import():
     '''
     Test whether psi4 can be imported
@@ -37,29 +37,29 @@ def test_torch_import():
         assert "torch" in sys.modules
     except ImportError:
         assert 0
-        
+
 def test_load_model():
     '''
     Test model loading
     '''
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
-    
+
     if __name__ == '__main__':
         basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/data/")
         _ = pickle.load(open(basepath + "/models-trends/mergedG10-abs-reg-b3lyp.pkl", "rb"))
-        
+
 def test_build_nn():
     '''
     Test building GatedNetwork
     '''
     import torch
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
-    
+
     torch.set_num_threads(4)
     torch.manual_seed(0)
     np.random.seed(0)
     device = torch.device('cpu')
-    
+
     model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
                          n_layers=4, droprate=0,
                          elements=list(range(10)))
@@ -67,8 +67,8 @@ def test_build_nn():
     assert np.abs(model(x).detach().numpy().reshape(-1)[0] - -0.041750696) < 1e-6
     x = torch.ones((1, 20, 58*3+7+1))
     assert np.abs(model(x).detach().numpy().reshape(-1)[0] - -0.06381429) < 1e-6
-    
-    
+
+
 def test_vat():
     '''
     Test VAT
@@ -76,12 +76,12 @@ def test_vat():
     import torch
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
     from dfa_recommender.vat import regVAT, VAT
-    
+
     torch.set_num_threads(4)
     torch.manual_seed(0)
     np.random.seed(0)
     device = torch.device('cpu')
-    
+
     model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
                          n_layers=4, droprate=0,
                          elements=list(range(10)))
@@ -93,7 +93,7 @@ def test_vat():
     vat_criterion = regVAT(device, eps, xi, alpha, k=3, cut=cut)
     d_x = vat_criterion(model, x)
     d_x = d_x.detach().numpy().reshape(-1)[0]
-    
+
     assert np.max(d_x - 0.0012390986) < 1e-4
 
 
@@ -103,13 +103,13 @@ def test_np2ds():
     '''
     import torch
     from dfa_recommender.ml_utils import numpy_to_dataset
-    
+
     X = np.zeros((2, 10, 10))
     y = np.ones(2)
     dataset = numpy_to_dataset(X, y, regression=True)
     assert isinstance(dataset, torch.utils.data.TensorDataset)
-    
-    
+
+
 def test_evaluator():
     '''
     Test the model evaluation functions
@@ -120,12 +120,12 @@ def test_evaluator():
     from dfa_recommender.evaluate import evaluate_regressor
     from dfa_recommender.dataset import SubsetDataset
     from torch.utils.data import DataLoader
-    
+
     torch.set_num_threads(4)
     torch.manual_seed(0)
     np.random.seed(0)
     device = torch.device('cpu')
-    
+
     model = GatedNetwork(nin=58*3+7, n_out=10, n_hidden=96,
                          n_layers=4, droprate=0,
                          elements=list(range(10)))
@@ -137,12 +137,12 @@ def test_evaluator():
     sub = SubsetDataset(dataset, list(range(len(dataset))))
     loader = DataLoader(sub, len(sub), num_workers=0)
     mae, scaled_mae, rval = evaluate_regressor(model, loader, device, scaler)
-    
+
     assert np.abs(mae) < 1e-6
     assert np.abs(scaled_mae) < 1e-6
     assert np.abs(1 - rval) < 1e-6
-    
-    
+
+
 def test_nn_workflow():
     '''
     Test the whole workflow of using trained NN for predictions.
@@ -155,7 +155,7 @@ def test_nn_workflow():
     from dfa_recommender.evaluate import evaluate_regressor
     from dfa_recommender.net import GatedNetwork, MySoftplus, TiledMultiLayerNN, MLP, finalMLP, ElementalGate
     from dfa_recommender.vat import regVAT, VAT
-    
+
     if __name__ == '__main__':
         basepath = resource_filename(Requirement.parse("dfa_recommender"), "/dfa_recommender/data/")
         X_org = pickle.load(open(basepath + "/X.pickle", "rb"))
@@ -166,7 +166,7 @@ def test_nn_workflow():
         torch.manual_seed(0)
         np.random.seed(0)
         device = torch.device('cpu')
-        
+
         f = 'b3lyp'
         tr_inds, te_inds = inds["train"], inds["test"]
         X_tr, X_te = X_org[tr_inds], X_org[te_inds]

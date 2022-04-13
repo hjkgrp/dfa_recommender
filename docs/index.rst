@@ -8,10 +8,25 @@ Welcome to dfa_recommender's documentation!
 
 .. toctree::
    :maxdepth: 2
+   :caption: Model and approach
+
+.. image:: DFARec.png
+   :width: 700
+
+.. image:: DFARecWorkflow.png
+   :width: 700
+
+.. toctree::
+   :maxdepth: 2
    :caption: Contents:
 
-   getting_started
-   api
+.. toctree::
+   :maxdepth: 2 
+   :caption: General Information
+
+   Installation
+   Citation
+   API
 
 
 
