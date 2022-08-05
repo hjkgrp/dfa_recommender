@@ -27,6 +27,7 @@ Welcome to dfa_recommender's documentation!
    Installation
    Citation
    API
+   Tutorials
 
 
 
