@@ -2,6 +2,8 @@ DFA recommender
 ==============================
 [//]: # (Badges)
 [![CI](https://github.com/chenruduan/dfa_recommender/actions/workflows/CI.yaml/badge.svg)](https://github.com/chenruduan/dfa_recommender/actions/workflows/CI.yaml)
+[![Documentation Status](https://readthedocs.org/projects/dfa-recommender-hjkgrp/badge/?version=latest)]
+(https://dfa-recommender-hjkgrp.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/chenruduan/dfa_recommender/branch/main/graphs/badge.svg?token=A1A3S0E2F9)](https://codecov.io/gh/chenruduan/dfa_recommender/branch/main)
 
 
