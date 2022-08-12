@@ -19,9 +19,11 @@ Due to the ambiguity of the definition of the best DFA (multiple DFAs perform si
 3. Pip installation `conda activate dfa_rec && cd dfa_recommender && pip install -e .`
 4. Test everything works as expected `python setup.py test`
 
-### File Structure
+The installation should take less than 10 minutes on a normal laptop.
+
+### File structure
 ```
-./
+./dfa_recommender/
 ├── __init__.py
 ├── __pycache__
 ├── _version.py
@@ -45,10 +47,14 @@ Due to the ambiguity of the definition of the best DFA (multiple DFAs perform si
 * `tests` containts unit testing of the DFA recommender.
 * `tutorials-submitted` contains Jupyter notebooks that reproduce all the results in the paper. Please refer to at the `Tutorial` section in the [`readthedoc` document](https://dfa-recommender-hjkgrp.readthedocs.io/en/latest/) for the details.
 
+### Dependency
+* Pytorch (1.10.0), Psi4 (1.6.1), Pandas (1.4.3), Scikit-learn (1.1.1)
+* Tested on MacOS (M1, M1pro), Linux (RedHat 7)
+
 ### Citation
 ```
 @Article {dfa_recommender,
-author = {Duan, Chenru and Nandy, Aditya and Meyer Ralf and Arunachalam Naveen and Kulik, Heather J.},
+author = {Duan, Chenru and Nandy, Aditya and Meyer, Ralf and Arunachalam, Naveen and Kulik, Heather J.},
 title = {A Transferable Recommender Approach for Selecting the Best Density Functional Approximations in Chemical Discovery},
 journal = {arXiv},
 url = {https://arxiv.org/abs/2207.10747},
@@ -57,10 +63,12 @@ year = {2022},
 }
 ```
 
+### Reproduction instructions
+All the reults reported in the paper above should be reproduced by the Jupyter notebooks at `dfa_recommender/tutorials-submitted`. These notebooks also have code blocks demonstrating the usage of our models.
 
-### Copyright
+### Developers
 
-Copyright (c) 2022, Chenru Duan at HJK Group@MIT
+Chenru Duan at HJK Group@MIT
 
 
 #### Acknowledgements
