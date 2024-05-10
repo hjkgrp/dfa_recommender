@@ -5,12 +5,12 @@ channels:
   - conda-forge
 dependencies:
     # Base depends
-  - python=3.8
-  - psi4
+  - python=3.8.13
+  - psi4=1.6.1+5b9f6e3
   - pip
-  - pytorch=1.10.0
-  - pandas
-  - scikit-learn
+  - pytorch=1.10.2
+  - pandas=1.4.3
+  - scikit-learn=1.1.1
 
     # Testing
   - pytest
