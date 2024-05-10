@@ -6,6 +6,8 @@ Some Credits to: https://gitlab.com/jmargraf/kdf
 import numpy as np
 import psi4
 import os
+import torch
+from e3nn import o3
 from typing import Tuple
 
 
@@ -271,7 +273,7 @@ class DensityFitting:
             self.max_tmplate.append((self.max_shell == ii).sum()*(2*ii + 1) + self.max_tmplate[-1])
             evenodd = "e" if ii%2==0 else "o"
             self.irreps += [str((self.max_shell == ii).sum()) + "x" + str(ii) + evenodd]
-        self.irreps = "+".join(self.irreps)
+        self.irreps = o3.Irreps("+".join(self.irreps))
 
         tmplates = []
         for jj in range(len(self.shellmap)):
@@ -301,11 +303,19 @@ class DensityFitting:
         e3nn m: [-2, -1, 0, 1, 2]
         '''
 
-        psi4_2_e3nn = [[0],[2,0,1],[4,2,0,1,3],[6,4,2,0,1,3,5],[8,6,4,2,0,1,3,5,7]]
+        psi4_2_e3nn = [
+            [0],
+            [2, 0, 1],
+            [4, 2, 0, 1, 3],
+            [6, 4, 2, 0, 1, 3, 5],
+            [8, 6, 4, 2, 0, 1, 3, 5, 7],
+            [10, 8, 6, 4, 2, 0, 1, 3, 5, 7, 9],
+            [12, 10, 8, 6, 4, 2, 0, 1, 3, 5, 7, 9, 11],
+        ]
         self.C_P_pad_e3nn = np.zeros(shape=self.C_P_pad.shape)
         for ii in range(self.C_P_pad.shape[0]):
-            for jj, ele in enumerate(self.irreps.split("+")):
-                num, l = int(ele.split("x")[0]),  int(ele.split("x")[1][0])
+            for jj, irrep in enumerate(self.irreps):
+                num, l = irrep.mul, irrep.ir.l
                 coeffs = self.C_P_pad[ii][self.max_tmplate[jj]: self.max_tmplate[jj+1]]
                 coeffs = np.array_split(coeffs, num)
                 coeffs_trans = []
@@ -315,5 +325,21 @@ class DensityFitting:
                 self.C_P_pad_e3nn[ii][self.max_tmplate[jj]: self.max_tmplate[jj+1]] = coeffs_trans
         mat = np.where(np.abs(self.C_P_pad_e3nn)< 1e-8)
         self.C_P_pad_e3nn[mat[0], mat[1]] = 0
+
+        # As explained in 
+        # https://docs.e3nn.org/en/latest/guide/change_of_basis.html
+        # the ordering of the basis functions was changed in release 0.2.2
+        # which necessitates a change of basis for the density fitting coefficients
+        change_of_basis = torch.tensor(
+            [
+                # this specifies the change of basis yzx -> xyz
+                [0.0, 0.0, 1.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ]
+        )
+
+        D_change = self.irreps.D_from_matrix(change_of_basis).numpy()
+        self.C_P_pad_e3nn = self.C_P_pad_e3nn @ D_change.T 
 
 
