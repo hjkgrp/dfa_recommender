@@ -7,15 +7,15 @@ DFA recommender
 
 
 ### System-specific density functional recommender
-The idea is to recommend a density functional approximation (DFA) in the realm of density functional theory (DFT) that best approximate the properties that would be obtained by the reference method (coupled cluster, experiement, etc.). Here we assume we have the 3D geometry optimized at B3LYP to start with, since it has been observed that the optimized geometry obtained by DFT and mor accurate methods (e.g., CASPT2) is [very similar](https://pubs.rsc.org/en/content/articlelanding/2022/cp/d1cp04885f). Therefore, we use a [density fitting approach](https://www.nature.com/articles/s41467-020-20471-y) to decompose the electron density as node features on a molecular graph.
+The idea is to recommend a density functional approximation (DFA) in the realm of density functional theory (DFT) that best approximate the properties that would be obtained by the reference method (coupled cluster, experiment, etc.). Here we assume we have the 3D geometry optimized at B3LYP to start with, since it has been observed that the optimized geometry obtained by DFT and mor accurate methods (e.g., CASPT2) is [very similar](https://pubs.rsc.org/en/content/articlelanding/2022/cp/d1cp04885f). Therefore, we use a [density fitting approach](https://www.nature.com/articles/s41467-020-20471-y) to decompose the electron density as node features on a molecular graph.
 ![Recommender approach](https://github.com/chenruduan/dfa_recommender/blob/main/DFARec.png)
 
-Due to the ambiguity of the definition of the best DFA (multiple DFAs perform similarly well in practice), we frame this question as a "regress-then-classify" task. We build transfer leanring models to directly predict the absolute difference of the result of the reference and a DFA. We do this for all candidate DFAs in the pool, where 48 DFAs that span multiple rungs of "Jacob's ladder" are considered in this workflow by default. Finally we sort the predicted differences and select the DFA that yields the lowest predicted difference.
+Due to the ambiguity of the definition of the best DFA (multiple DFAs perform similarly well in practice), we frame this question as a "regress-then-classify" task. We build transfer learning models to directly predict the absolute difference of the result of the reference and a DFA. We do this for all candidate DFAs in the pool, where 48 DFAs that span multiple rungs of "Jacob's ladder" are considered in this workflow by default. Finally we sort the predicted differences and select the DFA that yields the lowest predicted difference.
 ![Recommender workflow](https://github.com/chenruduan/dfa_recommender/blob/main/DFARecWorkflow.png)
 
 ### Installation
 1. Clone this repo `git clone https://github.com/hjkgrp/dfa_recommender.git`
-2. Setup a conda environment with the proived yaml file `conda env create -f dfa_recommender/devtools/conda-envs/test_env.yaml`
+2. Setup a conda environment with the provided yaml file `conda env create -f dfa_recommender/devtools/conda-envs/test_env.yaml`
 3. Pip installation `conda activate dfa_rec && cd dfa_recommender && pip install -e .`
 4. Test everything works as expected `python setup.py test`
 
@@ -42,9 +42,9 @@ The installation should take less than 10 minutes on a normal laptop.
 └── vat.py
 ```
 * All `.py` files are Python functions, where the comments and use case are available at the `API` section in the [`readthedoc` document](https://dfa-recommender-hjkgrp.readthedocs.io/en/latest/).
-* `data` contains csv file, featuration, trained models, and the optimized geometries for *`VSS-452`* and *`CSD-76`* set.
-* `scripts` conatins Python scripts for quick model training and electron density processing.
-* `tests` containts unit testing of the DFA recommender.
+* `data` contains csv file, featurization, trained models, and the optimized geometries for *`VSS-452`* and *`CSD-76`* set.
+* `scripts` contains Python scripts for quick model training and electron density processing.
+* `tests` contains unit testing of the DFA recommender.
 * `tutorials-submitted` contains Jupyter notebooks that reproduce all the results in the paper. Please refer to at the `Tutorial` section in the [`readthedoc` document](https://dfa-recommender-hjkgrp.readthedocs.io/en/latest/) for the details.
 
 ### Dependency
@@ -64,7 +64,7 @@ year = {2022},
 ```
 
 ### Reproduction instructions
-All the reults reported in the paper above should be reproduced by the Jupyter notebooks at `dfa_recommender/tutorials-submitted`. These notebooks also have code blocks demonstrating the usage of our models.
+All the results reported in the paper above should be reproduced by the Jupyter notebooks at `dfa_recommender/tutorials-submitted`. These notebooks also have code blocks demonstrating the usage of our models.
 
 ### Developers
 
